@@ -3,8 +3,8 @@ class SystemUpdater {
 	
 	public $updateServerUrl ="http://localhost:8080/";
 	public $updateVersionFile = "current_version.txt"; 
-	public $updateReleaseRemotePath ="releases/update_v{{version}}.zip"; //Will Add VersionNo to End #e.g. wil be update_v1.zip
-
+	public $updateReleaseRemotePath = "releases/update_v{{version}}.zip"; //Will Add VersionNo to End #e.g. wil be update_v1.zip
+	public $initialVersionRelease = "1";
 /*
  * FUNCTION TO GET LATEST VERSION
  */
@@ -13,14 +13,18 @@ function getLatestVersion(){
 	{
 		// open version file on external server
 		$file = fopen ("$this->updateServerUrl/$this->updateVersionFile", "r");
-		$vnum = intval(fgets($file));    
+		if(!$file)
+		{
+			throw new Exception("SERVER NOT FOUND");
+		}
+		$vnum = intval(fgets($file));
 		fclose($file);
 		//Check if File Exists
 		if (!file_exists($this->updateVersionFile))
 		{
 			$versionfile = fopen ($this->updateVersionFile, "w");
 			$user_vnum = fgets($versionfile);  
-			fwrite($versionfile, "0");  
+			fwrite($versionfile, $initialVersionRelease);  
 			fclose($versionfile);
 		}
 		// check users local file for version number
@@ -39,6 +43,7 @@ function getLatestVersion(){
 	}
 	catch(Exception $e)
 	{
+		$this->sendErrorResponse(500, "Failed to Get Latest Version from Target URL, Error: ".$e->getMessage());
 		return null;
 	}	
 }
@@ -59,7 +64,7 @@ function downloadAndInstallUpdate($vnum){
 		// check for success or fail
 		if(!$copy)
 		{
-			return "FAILED_TO_DOWNLOAD";
+			throw new Exception("FAILED TO DOWNLOAD UPDATE");
 		}
 	// check for verification
 		$path = pathinfo(realpath($release_file), PATHINFO_DIRNAME);
@@ -84,15 +89,33 @@ function downloadAndInstallUpdate($vnum){
 		{
 			// delete potentially corrupt file
 			unlink($release_file);
-			return "FAILED_TO_EXTRACT";
+			throw new Exception("FAILED TO EXTRACT DOWNLOADED UPDATE");
 		}
 	}
 	catch(Exception $e)
 	{
+		$this->sendErrorResponse(500, "Failed Install And Update, Error: ".$e->getMessage());
 		return "FAILED_EXCEPTION: ".$e->getMessage();
 	}
 }
-
+/*
+ * EXTERNAL FUNCTION FOR RESPONSE
+ */
+function sendErrorResponse($code, $msg)
+{
+	$httpStatusCode = $code;
+	$httpStatusMsg  = $msg;
+	$phpSapiName    = substr(php_sapi_name(), 0, 3);
+	if ($phpSapiName == 'cgi' || $phpSapiName == 'fpm')
+	{
+		header('Status: '.$httpStatusCode.' '.$httpStatusMsg);
+	}
+	else
+	{
+		$protocol = isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0';
+		header($protocol.' '.$httpStatusCode.' '.$httpStatusMsg);
+	}
+}
 }
 /*
  * SYSTEM UPDATER CHECKS
