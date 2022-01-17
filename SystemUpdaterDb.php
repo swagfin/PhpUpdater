@@ -75,9 +75,12 @@ function downloadAndInstallUpdate($vnum){
 		//Required Database connection
 		require ("connect.php");
 		$mysqli = new mysqli($db_servername, $db_username, $db_password, $db_database);
+		if(!$mysqli)
+		{
+			throw new Exception("UNABLE TO CONNECT TO THE TARGET DATABASE: Server:$db_servername  Db: $db_database");
+		}
 		$mysqli->set_charset("utf8");
-		header('Content-Type: text/html;charset=utf-8');
-		$this->sqlImport($release_file);
+		$this->sqlImport($release_file, $mysqli);
 
 		if($this->terminateOnSqlError && $this->successCount <=0)
 		{
@@ -121,7 +124,7 @@ function sendErrorResponse($code, $msg)
  *
  * @param string path to sql file
  */
-function sqlImport($file)
+function sqlImport($file, $conn)
 {
 	$this->errorsCount = 0;
 	$this->successCount = 0;
@@ -163,7 +166,7 @@ function sqlImport($file)
                 $offset = $delimiterOffset + strlen($delimiter);
             } else {
                 $sql = trim($sql . ' ' . trim(substr($row, 0, $delimiterOffset)));
-                $this->query($sql);
+                $this->query($conn, $sql);
 
                 $row = substr($row, $delimiterOffset + strlen($delimiter));
                 $offset = 0;
@@ -172,8 +175,9 @@ function sqlImport($file)
         }
         $sql = trim($sql . ' ' . $row);
     }
-    if (strlen($sql) > 0) {
-        $this->query($row);
+    if (strlen($sql) > 0)
+	{
+        $this->query($conn,$row);
     }
 
     fclose($file);
@@ -245,13 +249,12 @@ function isQuoted($offset, $text)
     return $isQuoted;
 }
 
-function query($sql)
+function query($conn, $sql)
 {
 	try
 	{
-		global $mysqli;
 		echo '<br/>#<strong>Executing:</strong> ' . htmlspecialchars($sql) . ';';
-		if (!mysqli_query($mysqli, $sql))
+		if (!mysqli_query($conn, $sql))
 		{
 			echo "<span style='color:red'> [!ERROR!]</span>";
 			throw new Exception(" [!ERROR!]");
