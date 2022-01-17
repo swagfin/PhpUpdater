@@ -4,7 +4,7 @@ class SystemUpdater {
 	public $updateServerUrl ="http://localhost:8080/";
 	public $updateVersionFile = "current_version.txt"; 
 	public $updateReleaseRemotePath = "releases/update_v{{version}}.zip"; //Will Add VersionNo to End #e.g. wil be update_v1.zip
-	public $initialVersionRelease = "1";
+	public $initialVersionRelease = 0;
 /*
  * FUNCTION TO GET LATEST VERSION
  */
@@ -24,7 +24,7 @@ function getLatestVersion(){
 		{
 			$versionfile = fopen ($this->updateVersionFile, "w");
 			$user_vnum = fgets($versionfile);  
-			fwrite($versionfile, $initialVersionRelease);  
+			fwrite($versionfile, $this->initialVersionRelease);  
 			fclose($versionfile);
 		}
 		// check users local file for version number
@@ -44,7 +44,7 @@ function getLatestVersion(){
 	catch(Exception $e)
 	{
 		$this->sendErrorResponse(500, "Failed to Get Latest Version from Target URL, Error: ".$e->getMessage());
-		return null;
+		exit();
 	}	
 }
 /*
@@ -64,7 +64,7 @@ function downloadAndInstallUpdate($vnum){
 		// check for success or fail
 		if(!$copy)
 		{
-			throw new Exception("FAILED TO DOWNLOAD UPDATE");
+			throw new Exception("FAILED TO DOWNLOAD UPDATE VERSION: v$vnum");
 		}
 	// check for verification
 		$path = pathinfo(realpath($release_file), PATHINFO_DIRNAME);
@@ -89,13 +89,13 @@ function downloadAndInstallUpdate($vnum){
 		{
 			// delete potentially corrupt file
 			unlink($release_file);
-			throw new Exception("FAILED TO EXTRACT DOWNLOADED UPDATE");
+			throw new Exception("FAILED TO EXTRACT DOWNLOADED UPDATE VERSION: v$vnum");
 		}
 	}
 	catch(Exception $e)
 	{
 		$this->sendErrorResponse(500, "Failed Install And Update, Error: ".$e->getMessage());
-		return "FAILED_EXCEPTION: ".$e->getMessage();
+		exit();
 	}
 }
 /*
