@@ -93,7 +93,7 @@ function downloadAndInstallUpdate($vnum){
 		fwrite($versionfile, $vnum);  
 		fclose($versionfile);
 		//Return Success
-		echo "<br/><br/>SUCCESS | Peak MB: ", memory_get_peak_usage(true)/1024/1024;
+		echo "<br/><br/>FINISHED EXECUTION | Peak MB: ", memory_get_peak_usage(true)/1024/1024;
 	}
 	catch(Exception $e)
 	{
@@ -106,6 +106,8 @@ function downloadAndInstallUpdate($vnum){
  */
 function sendErrorResponse($code, $msg)
 {
+	//Optional
+	echo "Error: [".$msg."]";
 	$httpStatusCode = $code;
 	$httpStatusMsg  = $msg;
 	$phpSapiName    = substr(php_sapi_name(), 0, 3);

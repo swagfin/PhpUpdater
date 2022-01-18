@@ -103,6 +103,8 @@ function downloadAndInstallUpdate($vnum){
  */
 function sendErrorResponse($code, $msg)
 {
+	//Optional
+	echo "Error: [".$msg."]";
 	$httpStatusCode = $code;
 	$httpStatusMsg  = $msg;
 	$phpSapiName    = substr(php_sapi_name(), 0, 3);
